@@ -59,8 +59,8 @@ export default function DashboardLayout() {
             <Wallet className="h-5 w-5 text-white" />
           </div>
           <div>
-            <div className="font-heading font-extrabold text-lg leading-none">UMKM Pay</div>
-            <div className="text-[11px] text-white/50 mt-1">Keuangan & Kasir</div>
+            <div className="font-heading font-extrabold text-lg leading-none">UMKM</div>
+            <div className="text-[10px] font-semibold tracking-[0.25em] text-primary uppercase mt-1">go digital</div>
           </div>
         </div>
 

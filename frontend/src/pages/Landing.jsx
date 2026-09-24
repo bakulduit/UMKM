@@ -1,12 +1,31 @@
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
   Wallet, ShoppingCart, QrCode, BellRing, BarChart3, ShieldCheck,
-  Package, Users, ArrowRight, Check, Store, FileSpreadsheet,
+  Package, Users, ArrowRight, Check, Store, FileSpreadsheet, Phone, Mail,
 } from "lucide-react";
 
-const HERO = "https://images.pexels.com/photos/37042747/pexels-photo-37042747.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940";
 const PAY = "https://images.pexels.com/photos/12935051/pexels-photo-12935051.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940";
+
+const SLIDES = [
+  { url: "https://images.unsplash.com/photo-1510377971269-d723c13cc478?crop=entropy&cs=srgb&fm=jpg&q=85&w=940", cap: "Gerobak kaki lima" },
+  { url: "https://images.pexels.com/photos/36957559/pexels-photo-36957559.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940", cap: "Pedagang jalanan Jakarta" },
+  { url: "https://images.unsplash.com/photo-1611854064186-d8dccbccb031?crop=entropy&cs=srgb&fm=jpg&q=85&w=940", cap: "Warung gerobak" },
+  { url: "https://images.pexels.com/photos/37234069/pexels-photo-37234069.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940", cap: "Pasar tradisional" },
+  { url: "https://images.pexels.com/photos/7025416/pexels-photo-7025416.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940", cap: "Kios serba ada" },
+];
+
+const CARD_TONES = [
+  "bg-emerald-100 text-emerald-700",
+  "bg-amber-100 text-amber-700",
+  "bg-sky-100 text-sky-700",
+  "bg-rose-100 text-rose-700",
+  "bg-violet-100 text-violet-700",
+  "bg-orange-100 text-orange-700",
+  "bg-teal-100 text-teal-700",
+  "bg-fuchsia-100 text-fuchsia-700",
+];
 
 const features = [
   { icon: ShoppingCart, title: "Kasir Cepat (POS)", desc: "Catat penjualan, hitung kembalian, dan pilih metode pembayaran dalam hitungan detik." },
@@ -19,16 +38,69 @@ const features = [
   { icon: Store, title: "Multi-Outlet", desc: "Kelola beberapa cabang dan banyak akun kasir dari satu pemilik." },
 ];
 
+function Logo({ dark }) {
+  return (
+    <div className="flex items-center gap-3">
+      <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 grid place-items-center shadow-md shadow-emerald-500/30">
+        <Wallet className="h-5 w-5 text-white" />
+      </div>
+      <div className="leading-none">
+        <div className={`font-heading font-extrabold text-xl tracking-tight ${dark ? "text-white" : "text-secondary"}`}>UMKM</div>
+        <div className="text-[11px] font-semibold tracking-[0.25em] text-emerald-500 uppercase">go digital</div>
+      </div>
+    </div>
+  );
+}
+
+function HeroSlideshow() {
+  const [i, setI] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setI((p) => (p + 1) % SLIDES.length), 3500);
+    return () => clearInterval(t);
+  }, []);
+  return (
+    <div className="relative">
+      <div className="rounded-3xl overflow-hidden shadow-2xl border-4 border-white rotate-1 aspect-[4/3]">
+        {SLIDES.map((s, idx) => (
+          <img
+            key={idx}
+            src={s.url}
+            alt={s.cap}
+            className="absolute inset-0 w-full h-full object-cover transition-opacity duration-700"
+            style={{ opacity: i === idx ? 1 : 0 }}
+          />
+        ))}
+        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-2 z-10">
+          {SLIDES.map((_, idx) => (
+            <button
+              key={idx}
+              onClick={() => setI(idx)}
+              data-testid={`hero-slide-${idx}`}
+              className={`h-2 rounded-full transition-all duration-300 ${i === idx ? "w-6 bg-white" : "w-2 bg-white/60"}`}
+              aria-label={`Slide ${idx + 1}`}
+            />
+          ))}
+        </div>
+      </div>
+      <div className="absolute -bottom-6 -left-4 bg-white rounded-2xl shadow-xl border p-4 w-56 -rotate-2 hidden sm:block z-10">
+        <div className="flex items-center gap-2 text-emerald-600">
+          <BellRing className="h-5 w-5" />
+          <span className="font-heading font-bold">Uang Masuk!</span>
+        </div>
+        <div className="text-2xl font-heading font-extrabold mt-1 tabular text-secondary">Rp 150.000</div>
+        <div className="text-xs text-muted-foreground">via QRIS · barusan</div>
+      </div>
+    </div>
+  );
+}
+
 export default function Landing() {
   return (
     <div className="min-h-screen bg-background text-secondary">
       {/* Nav */}
       <header className="sticky top-0 z-30 bg-white/70 backdrop-blur-xl border-b">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center gap-3">
-          <div className="h-9 w-9 rounded-xl bg-primary grid place-items-center">
-            <Wallet className="h-5 w-5 text-white" />
-          </div>
-          <span className="font-heading font-extrabold text-lg">UMKM Pay</span>
+          <Logo />
           <div className="ml-auto flex items-center gap-2">
             <Link to="/login"><Button variant="ghost" data-testid="nav-login">Masuk</Button></Link>
             <Link to="/register"><Button data-testid="nav-register">Coba Gratis</Button></Link>
@@ -37,11 +109,14 @@ export default function Landing() {
       </header>
 
       {/* Hero */}
-      <section className="max-w-6xl mx-auto px-6 pt-16 pb-20 grid lg:grid-cols-2 gap-12 items-center">
+      <section className="relative overflow-hidden">
+        <div className="absolute -top-24 -right-24 h-72 w-72 rounded-full bg-amber-200/50 blur-3xl" />
+        <div className="absolute top-40 -left-20 h-72 w-72 rounded-full bg-emerald-200/50 blur-3xl" />
+        <div className="max-w-6xl mx-auto px-6 pt-16 pb-20 grid lg:grid-cols-2 gap-12 items-center relative">
         <div className="animate-fade-up">
-          <span className="overline text-primary">Aplikasi Keuangan UMKM Indonesia</span>
+          <span className="overline text-emerald-600">Aplikasi Keuangan UMKM Indonesia</span>
           <h1 className="font-heading text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tighter leading-tight mt-4">
-            Kelola kasir & keuangan usaha, <span className="text-primary">semudah scan QRIS.</span>
+            Kelola kasir & keuangan usaha, <span className="text-primary">mudah dan praktis.</span>
           </h1>
           <p className="text-muted-foreground text-lg mt-6 leading-relaxed max-w-lg">
             Satu aplikasi untuk mencatat pemasukan-pengeluaran, terima pembayaran QRIS dengan notifikasi suara, dan laporan keuangan yang bisa dipertanggungjawabkan.
@@ -57,18 +132,7 @@ export default function Landing() {
             <span className="flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-primary" /> Data aman</span>
           </div>
         </div>
-        <div className="relative">
-          <div className="rounded-3xl overflow-hidden shadow-2xl border-4 border-white rotate-1">
-            <img src={HERO} alt="UMKM pasar" className="w-full h-[420px] object-cover" />
-          </div>
-          <div className="absolute -bottom-6 -left-4 bg-white rounded-2xl shadow-xl border p-4 w-56 -rotate-2 hidden sm:block">
-            <div className="flex items-center gap-2 text-primary">
-              <BellRing className="h-5 w-5" />
-              <span className="font-heading font-bold">Uang Masuk!</span>
-            </div>
-            <div className="text-2xl font-heading font-extrabold mt-1 tabular">Rp 150.000</div>
-            <div className="text-xs text-muted-foreground">via QRIS · barusan</div>
-          </div>
+        <HeroSlideshow />
         </div>
       </section>
 
@@ -82,8 +146,8 @@ export default function Landing() {
         </div>
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-10">
           {features.map((f, i) => (
-            <div key={i} className="bg-white rounded-2xl border p-6 hover:shadow-lg hover:-translate-y-1 transition-transform duration-200">
-              <div className="h-11 w-11 rounded-xl bg-accent grid place-items-center text-accent-foreground">
+            <div key={i} className="bg-white rounded-2xl border p-6 hover:shadow-xl hover:-translate-y-1 transition-transform duration-200">
+              <div className={`h-11 w-11 rounded-xl grid place-items-center ${CARD_TONES[i % CARD_TONES.length]}`}>
                 <f.icon className="h-5 w-5" />
               </div>
               <h3 className="font-heading font-bold text-lg mt-4">{f.title}</h3>
@@ -120,8 +184,25 @@ export default function Landing() {
         </div>
       </section>
 
-      <footer className="border-t py-8 text-center text-sm text-muted-foreground">
-        © {new Date().getFullYear()} UMKM Pay — Aplikasi Keuangan & Kasir untuk UMKM Indonesia.
+      <footer className="border-t bg-white">
+        <div className="max-w-6xl mx-auto px-6 py-10 flex flex-col sm:flex-row items-center justify-between gap-6">
+          <Logo />
+          <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-6">
+            <a href="https://wa.me/6282129078762" target="_blank" rel="noreferrer" data-testid="footer-wa"
+               className="flex items-center gap-2 text-sm font-medium text-secondary hover:text-emerald-600 transition-colors">
+              <span className="h-9 w-9 rounded-full bg-emerald-100 text-emerald-700 grid place-items-center"><Phone className="h-4 w-4" /></span>
+              0821-2907-8762
+            </a>
+            <a href="mailto:nashoharizal@gmail.com" data-testid="footer-email"
+               className="flex items-center gap-2 text-sm font-medium text-secondary hover:text-emerald-600 transition-colors">
+              <span className="h-9 w-9 rounded-full bg-amber-100 text-amber-700 grid place-items-center"><Mail className="h-4 w-4" /></span>
+              nashoharizal@gmail.com
+            </a>
+          </div>
+        </div>
+        <div className="border-t py-5 text-center text-sm text-muted-foreground">
+          © {new Date().getFullYear()} UMKM Go Digital — Aplikasi Keuangan & Kasir untuk UMKM Indonesia.
+        </div>
       </footer>
     </div>
   );
