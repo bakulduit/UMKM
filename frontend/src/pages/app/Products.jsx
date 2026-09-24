@@ -11,10 +11,11 @@ import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Pencil, Trash2, Loader2, Package } from "lucide-react";
 import { toast } from "sonner";
 
-const empty = { name: "", sku: "", category: "Umum", price: 0, cost: 0, stock: 0, low_stock_threshold: 5, image_path: null };
+const empty = { name: "", sku: "", category: "Umum", price: 0, cost: 0, stock: 0, low_stock_threshold: 5, image_path: null, outlet_id: null };
 
 export default function Products() {
   const qc = useQueryClient();
@@ -24,6 +25,8 @@ export default function Products() {
   const [busy, setBusy] = useState(false);
 
   const { data: products = [], isLoading } = useQuery({ queryKey: ["products"], queryFn: async () => (await api.get("/products")).data });
+  const { data: outlets = [] } = useQuery({ queryKey: ["outlets"], queryFn: async () => (await api.get("/outlets")).data });
+  const outletName = (id) => outlets.find((o) => o.id === id)?.name || "Semua";
 
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
   const openNew = () => { setForm(empty); setEditId(null); setOpen(true); };
@@ -64,7 +67,7 @@ export default function Products() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Produk</TableHead><TableHead>Kategori</TableHead><TableHead>Harga Jual</TableHead>
+                <TableHead>Produk</TableHead><TableHead>Kategori</TableHead><TableHead>Outlet</TableHead><TableHead>Harga Jual</TableHead>
                 <TableHead>Modal</TableHead><TableHead>Stok</TableHead><TableHead className="text-right">Aksi</TableHead>
               </TableRow>
             </TableHeader>
@@ -80,6 +83,7 @@ export default function Products() {
                     </div>
                   </TableCell>
                   <TableCell>{p.category}</TableCell>
+                  <TableCell className="text-sm">{outletName(p.outlet_id)}</TableCell>
                   <TableCell className="tabular">{rupiah(p.price)}</TableCell>
                   <TableCell className="tabular">{rupiah(p.cost)}</TableCell>
                   <TableCell>
@@ -105,6 +109,16 @@ export default function Products() {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2"><Label>Kategori</Label><Input value={form.category} onChange={set("category")} data-testid="product-category" /></div>
               <div className="space-y-2"><Label>SKU (opsional)</Label><Input value={form.sku} onChange={set("sku")} /></div>
+            </div>
+            <div className="space-y-2">
+              <Label>Outlet (opsional)</Label>
+              <Select value={form.outlet_id || "none"} onValueChange={(v) => setForm({ ...form, outlet_id: v === "none" ? null : v })}>
+                <SelectTrigger data-testid="product-outlet"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Semua Outlet</SelectItem>
+                  {outlets.map((o) => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2"><Label>Harga Jual</Label><Input type="number" value={form.price} onChange={set("price")} data-testid="product-price" /></div>

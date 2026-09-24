@@ -2,7 +2,10 @@ import { useState, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, apiError } from "@/lib/apiClient";
 import { rupiah, playIncomingMoneySound } from "@/lib/format";
+import { printReceipt, whatsappUrl } from "@/lib/receipt";
+import { useAuth } from "@/context/AuthContext";
 import AuthImage from "@/components/AuthImage";
+import OutletSelect from "@/components/OutletSelect";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -11,13 +14,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import {
-  Search, Plus, Minus, Trash2, ShoppingCart, Banknote, QrCode, Loader2, CheckCircle2, BellRing, PackageX,
+  Search, Plus, Minus, Trash2, ShoppingCart, Banknote, QrCode, Loader2, CheckCircle2, BellRing, PackageX, Printer, Send,
 } from "lucide-react";
 import { toast } from "sonner";
 
 export default function POS() {
   const qc = useQueryClient();
+  const { user } = useAuth();
   const [q, setQ] = useState("");
+  const [outlet, setOutlet] = useState("all");
   const [cart, setCart] = useState([]);
   const [method, setMethod] = useState("cash");
   const [discount, setDiscount] = useState(0);
@@ -34,8 +39,13 @@ export default function POS() {
   const { data: umkm } = useQuery({ queryKey: ["umkm"], queryFn: async () => (await api.get("/umkm")).data });
 
   const filtered = useMemo(
-    () => products.filter((p) => p.name.toLowerCase().includes(q.toLowerCase())),
-    [products, q]
+    () =>
+      products.filter(
+        (p) =>
+          p.name.toLowerCase().includes(q.toLowerCase()) &&
+          (outlet === "all" || !p.outlet_id || p.outlet_id === outlet)
+      ),
+    [products, q, outlet]
   );
 
   const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
@@ -65,6 +75,7 @@ export default function POS() {
         discount: Number(discount || 0),
         customer_id: customerId === "none" ? null : customerId,
         is_credit: isCredit,
+        outlet_id: outlet === "all" ? null : outlet,
         amount_paid: method === "cash" ? Number(cashGiven || total) : total,
       });
       setLastTxn(data);
@@ -95,6 +106,7 @@ export default function POS() {
       <div className="lg:col-span-2">
         <div className="flex items-center gap-3 mb-5">
           <h1 className="font-heading text-2xl font-extrabold tracking-tight text-secondary">Kasir</h1>
+          {user?.role === "umkm_admin" && <OutletSelect value={outlet} onChange={setOutlet} className="w-40" allLabel="Semua Outlet" testid="pos-outlet" />}
           <div className="relative ml-auto w-full max-w-xs">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Cari produk..." className="pl-9" data-testid="pos-search" />
@@ -249,7 +261,13 @@ export default function POS() {
             {lastTxn && !lastTxn.is_credit && lastTxn.payment_method === "cash" && Number(lastTxn.amount_paid) > lastTxn.total && (
               <p className="text-sm text-muted-foreground mt-1">Kembalian: {rupiah(lastTxn.amount_paid - lastTxn.total)}</p>
             )}
-            <Button className="w-full mt-6" onClick={() => setSuccessOpen(false)} data-testid="success-close">Transaksi Baru</Button>
+            <div className="grid grid-cols-2 gap-2 mt-6">
+              <Button variant="outline" onClick={() => printReceipt(lastTxn, umkm)} data-testid="print-receipt"><Printer className="h-4 w-4 mr-2" /> Cetak Struk</Button>
+              <a href={whatsappUrl(lastTxn, umkm, null)} target="_blank" rel="noreferrer" className="w-full">
+                <Button variant="outline" className="w-full" data-testid="wa-receipt"><Send className="h-4 w-4 mr-2" /> WhatsApp</Button>
+              </a>
+            </div>
+            <Button className="w-full mt-2" onClick={() => setSuccessOpen(false)} data-testid="success-close">Transaksi Baru</Button>
           </div>
         </DialogContent>
       </Dialog>

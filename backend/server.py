@@ -156,6 +156,7 @@ class ProductInput(BaseModel):
     stock: int = 0
     low_stock_threshold: int = 5
     image_path: Optional[str] = None
+    outlet_id: Optional[str] = None
 
 
 class SaleItem(BaseModel):
@@ -194,6 +195,27 @@ class CustomerInput(BaseModel):
 class OutletInput(BaseModel):
     name: str
     address: Optional[str] = ""
+
+
+class SupplierInput(BaseModel):
+    name: str
+    phone: Optional[str] = ""
+    note: Optional[str] = ""
+
+
+class PurchaseItem(BaseModel):
+    product_id: str
+    name: str
+    cost: float
+    qty: int
+
+
+class PurchaseInput(BaseModel):
+    items: List[PurchaseItem]
+    supplier_id: Optional[str] = None
+    outlet_id: Optional[str] = None
+    note: Optional[str] = ""
+    payment_method: Literal["cash", "qris", "credit"] = "cash"
 
 
 class CashierInput(BaseModel):
@@ -569,6 +591,58 @@ async def delete_customer(cid: str, user: dict = Depends(require_roles("umkm_adm
     return {"ok": True}
 
 
+# ================= SUPPLIERS =================
+@api_router.get("/suppliers")
+async def list_suppliers(user: dict = Depends(require_roles("umkm_admin"))):
+    return await db.suppliers.find({"umkm_id": user["umkm_id"]}, {"_id": 0}).sort("name", 1).to_list(1000)
+
+
+@api_router.post("/suppliers")
+async def create_supplier(data: SupplierInput, user: dict = Depends(require_roles("umkm_admin"))):
+    doc = {"id": str(uuid.uuid4()), "umkm_id": user["umkm_id"], "name": data.name, "phone": data.phone,
+           "note": data.note, "created_at": now_iso()}
+    await db.suppliers.insert_one(doc)
+    doc.pop("_id", None)
+    return doc
+
+
+@api_router.delete("/suppliers/{sid}")
+async def delete_supplier(sid: str, user: dict = Depends(require_roles("umkm_admin"))):
+    await db.suppliers.delete_one({"id": sid, "umkm_id": user["umkm_id"]})
+    return {"ok": True}
+
+
+# ================= PURCHASES (restock) =================
+@api_router.post("/purchases")
+async def create_purchase(data: PurchaseInput, user: dict = Depends(require_roles("umkm_admin"))):
+    if not data.items:
+        raise HTTPException(status_code=400, detail="Tidak ada item pembelian")
+    total = sum(i.cost * i.qty for i in data.items)
+    supplier_name = None
+    if data.supplier_id:
+        sup = await db.suppliers.find_one({"id": data.supplier_id, "umkm_id": user["umkm_id"]})
+        if sup:
+            supplier_name = sup["name"]
+    for i in data.items:
+        # add stock and update latest cost
+        await db.products.update_one({"id": i.product_id, "umkm_id": user["umkm_id"]},
+                                     {"$inc": {"stock": i.qty}, "$set": {"cost": i.cost}})
+    doc = {"id": str(uuid.uuid4()), "umkm_id": user["umkm_id"], "outlet_id": data.outlet_id or user.get("outlet_id"),
+           "cashier_id": user["id"], "cashier_name": user["name"], "type": "purchase",
+           "items": [i.model_dump() for i in data.items], "total": total, "cogs": 0,
+           "supplier_id": data.supplier_id, "supplier_name": supplier_name,
+           "payment_method": data.payment_method, "status": "credit" if data.payment_method == "credit" else "paid",
+           "is_credit": data.payment_method == "credit", "note": data.note, "created_at": now_iso()}
+    await db.transactions.insert_one(doc)
+    doc.pop("_id", None)
+    return doc
+
+
+@api_router.get("/purchases")
+async def list_purchases(user: dict = Depends(require_roles("umkm_admin"))):
+    return await db.transactions.find({"umkm_id": user["umkm_id"], "type": "purchase"}, {"_id": 0}).sort("created_at", -1).to_list(500)
+
+
 # ================= TRANSACTIONS =================
 @api_router.post("/transactions/sale")
 async def create_sale(data: SaleInput, user: dict = Depends(require_roles("umkm_admin", "cashier"))):
@@ -621,12 +695,20 @@ async def list_transactions(type: Optional[str] = None, limit: int = 100, user: 
 
 
 # ================= DASHBOARD =================
+def _match_outlet(item, outlet_id):
+    if not outlet_id:
+        return True
+    return item.get("outlet_id") == outlet_id
+
+
 @api_router.get("/dashboard/summary")
-async def dashboard_summary(user: dict = Depends(require_roles("umkm_admin", "cashier"))):
-    txns = await db.transactions.find({"umkm_id": user["umkm_id"]}, {"_id": 0}).to_list(10000)
+async def dashboard_summary(outlet_id: Optional[str] = None, user: dict = Depends(require_roles("umkm_admin", "cashier"))):
+    all_txns = await db.transactions.find({"umkm_id": user["umkm_id"]}, {"_id": 0}).to_list(10000)
+    txns = [t for t in all_txns if _match_outlet(t, outlet_id)]
     income = sum(t["total"] for t in txns if t["type"] == "sale" and not t.get("is_credit"))
     credit_sales = sum(t["total"] for t in txns if t["type"] == "sale" and t.get("is_credit"))
     expense = sum(t["total"] for t in txns if t["type"] == "expense")
+    purchases = sum(t["total"] for t in txns if t["type"] == "purchase")
     cogs = sum(t.get("cogs", 0) for t in txns if t["type"] == "sale")
     today = datetime.now(timezone.utc).date().isoformat()
     today_income = sum(t["total"] for t in txns if t["type"] == "sale" and t["created_at"][:10] == today)
@@ -637,7 +719,7 @@ async def dashboard_summary(user: dict = Depends(require_roles("umkm_admin", "ca
     series = []
     for d in days:
         inc = sum(t["total"] for t in txns if t["type"] == "sale" and t["created_at"][:10] == d)
-        exp = sum(t["total"] for t in txns if t["type"] == "expense" and t["created_at"][:10] == d)
+        exp = sum(t["total"] for t in txns if t["type"] in ("expense", "purchase") and t["created_at"][:10] == d)
         series.append({"date": d[5:], "income": inc, "expense": exp})
 
     # top products
@@ -650,14 +732,15 @@ async def dashboard_summary(user: dict = Depends(require_roles("umkm_admin", "ca
     top = sorted(counter.items(), key=lambda x: -x[1])[:5]
     top_products = [{"name": k, "qty": v} for k, v in top]
 
-    products = await db.products.find({"umkm_id": user["umkm_id"]}, {"_id": 0}).to_list(1000)
+    all_products = await db.products.find({"umkm_id": user["umkm_id"]}, {"_id": 0}).to_list(1000)
+    products = [p for p in all_products if not outlet_id or p.get("outlet_id") in (outlet_id, None, "")]
     low_stock = [p for p in products if p.get("stock", 0) <= p.get("low_stock_threshold", 5)]
     customers = await db.customers.find({"umkm_id": user["umkm_id"]}, {"_id": 0}).to_list(1000)
     receivables = sum(c.get("balance", 0) for c in customers)
 
-    return {"income": income, "expense": expense, "profit": income - expense, "gross_profit": income - cogs,
-            "credit_sales": credit_sales, "today_income": today_income, "sale_count": sale_count,
-            "product_count": len(products), "low_stock_count": len(low_stock),
+    return {"income": income, "expense": expense, "purchases": purchases, "profit": income - expense,
+            "gross_profit": income - cogs, "credit_sales": credit_sales, "today_income": today_income,
+            "sale_count": sale_count, "product_count": len(products), "low_stock_count": len(low_stock),
             "low_stock": low_stock[:10], "receivables": receivables, "series": series, "top_products": top_products}
 
 
@@ -666,19 +749,21 @@ def parse_range(start, end):
     return start, end
 
 
-async def _report_data(umkm_id, start, end):
+async def _report_data(umkm_id, start, end, outlet_id=None):
     q = {"umkm_id": umkm_id}
     txns = await db.transactions.find(q, {"_id": 0}).sort("created_at", 1).to_list(20000)
     if start:
         txns = [t for t in txns if t["created_at"][:10] >= start]
     if end:
         txns = [t for t in txns if t["created_at"][:10] <= end]
+    if outlet_id:
+        txns = [t for t in txns if t.get("outlet_id") == outlet_id]
     return txns
 
 
 @api_router.get("/reports/summary")
-async def report_summary(start: Optional[str] = None, end: Optional[str] = None, user: dict = Depends(require_roles("umkm_admin"))):
-    txns = await _report_data(user["umkm_id"], start, end)
+async def report_summary(start: Optional[str] = None, end: Optional[str] = None, outlet_id: Optional[str] = None, user: dict = Depends(require_roles("umkm_admin"))):
+    txns = await _report_data(user["umkm_id"], start, end, outlet_id)
     revenue = sum(t["total"] for t in txns if t["type"] == "sale")
     cogs = sum(t.get("cogs", 0) for t in txns if t["type"] == "sale")
     gross = revenue - cogs
@@ -687,12 +772,13 @@ async def report_summary(start: Optional[str] = None, end: Optional[str] = None,
         if t["type"] == "expense":
             exp_by_cat[t.get("category", "Lain")] = exp_by_cat.get(t.get("category", "Lain"), 0) + t["total"]
     total_expense = sum(exp_by_cat.values())
+    purchases = sum(t["total"] for t in txns if t["type"] == "purchase")
     net = gross - total_expense
     cash_in = sum(t["total"] for t in txns if t["type"] == "sale" and not t.get("is_credit"))
-    cash_out = total_expense
+    cash_out = total_expense + sum(t["total"] for t in txns if t["type"] == "purchase" and not t.get("is_credit"))
     return {"revenue": revenue, "cogs": cogs, "gross_profit": gross, "expenses_by_category": exp_by_cat,
-            "total_expense": total_expense, "net_profit": net, "cash_in": cash_in, "cash_out": cash_out,
-            "net_cash_flow": cash_in - cash_out, "transaction_count": len(txns)}
+            "total_expense": total_expense, "purchases": purchases, "net_profit": net, "cash_in": cash_in,
+            "cash_out": cash_out, "net_cash_flow": cash_in - cash_out, "transaction_count": len(txns)}
 
 
 async def user_from_token(token: str) -> dict:
@@ -710,16 +796,17 @@ async def user_from_token(token: str) -> dict:
 
 @api_router.get("/reports/export")
 async def export_report(format: str = "excel", start: Optional[str] = None, end: Optional[str] = None,
-                        authorization: str = Header(None), auth: str = Query(None)):
+                        outlet_id: Optional[str] = None, authorization: str = Header(None), auth: str = Query(None)):
     token = authorization[7:] if authorization and authorization.startswith("Bearer ") else auth
     user = await user_from_token(token)
     if user["role"] != "umkm_admin":
         raise HTTPException(status_code=403, detail="Akses ditolak")
-    txns = await _report_data(user["umkm_id"], start, end)
+    txns = await _report_data(user["umkm_id"], start, end, outlet_id)
     umkm = await get_umkm(user["umkm_id"])
     bn = umkm["name"] if umkm else "UMKM"
-    rows = [{"Tanggal": t["created_at"][:19].replace("T", " "), "Tipe": "Penjualan" if t["type"] == "sale" else "Pengeluaran",
-             "Keterangan": t.get("category") or ", ".join(i["name"] for i in t.get("items", [])) or "-",
+    type_label = {"sale": "Penjualan", "expense": "Pengeluaran", "purchase": "Pembelian"}
+    rows = [{"Tanggal": t["created_at"][:19].replace("T", " "), "Tipe": type_label.get(t["type"], t["type"]),
+             "Keterangan": t.get("category") or t.get("supplier_name") or ", ".join(i["name"] for i in t.get("items", [])) or "-",
              "Metode": t.get("payment_method", "-"), "Kasir": t.get("cashier_name", "-"),
              "Status": t.get("status", "-"), "Jumlah": t["total"]} for t in txns]
 

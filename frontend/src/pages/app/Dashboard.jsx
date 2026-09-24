@@ -1,16 +1,19 @@
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { api } from "@/lib/apiClient";
 import { rupiah } from "@/lib/format";
 import { PageHeader } from "@/components/PageHeader";
 import StatCard from "@/components/StatCard";
+import OutletSelect from "@/components/OutletSelect";
 import { Card } from "@/components/ui/card";
 import { TrendingUp, TrendingDown, Wallet, ShoppingBag, AlertTriangle, HandCoins, Loader2 } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, CartesianGrid } from "recharts";
 
 export default function Dashboard() {
+  const [outlet, setOutlet] = useState("all");
   const { data, isLoading } = useQuery({
-    queryKey: ["dashboard"],
-    queryFn: async () => (await api.get("/dashboard/summary")).data,
+    queryKey: ["dashboard", outlet],
+    queryFn: async () => (await api.get(`/dashboard/summary${outlet !== "all" ? `?outlet_id=${outlet}` : ""}`)).data,
   });
 
   if (isLoading || !data)
@@ -18,7 +21,8 @@ export default function Dashboard() {
 
   return (
     <div>
-      <PageHeader title="Dashboard Keuangan" subtitle="Ringkasan aktivitas usaha Anda" testid="dashboard-header" />
+      <PageHeader title="Dashboard Keuangan" subtitle="Ringkasan aktivitas usaha Anda" testid="dashboard-header"
+        action={<OutletSelect value={outlet} onChange={setOutlet} className="w-48" testid="dashboard-outlet" />} />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard icon={Wallet} tone="primary" label="Total Pemasukan" value={rupiah(data.income)} sub={`Hari ini: ${rupiah(data.today_income)}`} testid="stat-income" />

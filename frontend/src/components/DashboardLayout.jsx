@@ -3,7 +3,7 @@ import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import {
   LayoutDashboard, ShoppingCart, Package, Users, FileBarChart, Store,
-  UserCog, CreditCard, Settings, LogOut, Menu, X, Building2, BadgeCheck, ScrollText, Wallet,
+  UserCog, CreditCard, Settings, LogOut, Menu, X, Building2, BadgeCheck, ScrollText, Wallet, Truck,
 } from "lucide-react";
 
 const NAV = {
@@ -17,6 +17,7 @@ const NAV = {
     { to: "/app", icon: LayoutDashboard, label: "Dashboard", end: true },
     { to: "/app/pos", icon: ShoppingCart, label: "Kasir (POS)" },
     { to: "/app/products", icon: Package, label: "Produk" },
+    { to: "/app/purchases", icon: Truck, label: "Pembelian & Supplier" },
     { to: "/app/customers", icon: Users, label: "Pelanggan & Kasbon" },
     { to: "/app/reports", icon: FileBarChart, label: "Laporan" },
     { to: "/app/history", icon: ScrollText, label: "Riwayat Transaksi" },

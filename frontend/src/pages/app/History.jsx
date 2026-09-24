@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, apiError } from "@/lib/apiClient";
 import { rupiah, shortDate } from "@/lib/format";
+import { printReceipt, whatsappUrl } from "@/lib/receipt";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,7 +11,7 @@ import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Minus, Loader2, ScrollText, ArrowDownCircle, ArrowUpCircle } from "lucide-react";
+import { Minus, Loader2, ScrollText, ArrowDownCircle, ArrowUpCircle, Truck, Printer, Send } from "lucide-react";
 import { toast } from "sonner";
 
 export default function History() {
@@ -20,6 +21,7 @@ export default function History() {
   const [busy, setBusy] = useState(false);
 
   const { data: txns = [], isLoading } = useQuery({ queryKey: ["transactions"], queryFn: async () => (await api.get("/transactions?limit=200")).data });
+  const { data: store } = useQuery({ queryKey: ["umkm"], queryFn: async () => (await api.get("/umkm")).data });
 
   const saveExpense = async () => {
     setBusy(true);
@@ -44,7 +46,7 @@ export default function History() {
         ) : (
           <Table>
             <TableHeader>
-              <TableRow><TableHead>Waktu</TableHead><TableHead>Jenis</TableHead><TableHead>Keterangan</TableHead><TableHead>Kasir</TableHead><TableHead>Metode</TableHead><TableHead className="text-right">Jumlah</TableHead></TableRow>
+              <TableRow><TableHead>Waktu</TableHead><TableHead>Jenis</TableHead><TableHead>Keterangan</TableHead><TableHead>Kasir</TableHead><TableHead>Metode</TableHead><TableHead className="text-right">Jumlah</TableHead><TableHead className="text-right">Aksi</TableHead></TableRow>
             </TableHeader>
             <TableBody>
               {txns.map((t) => (
@@ -53,15 +55,25 @@ export default function History() {
                   <TableCell>
                     {t.type === "sale" ? (
                       <Badge className="bg-accent text-accent-foreground hover:bg-accent gap-1"><ArrowDownCircle className="h-3 w-3" /> Penjualan</Badge>
+                    ) : t.type === "purchase" ? (
+                      <Badge variant="outline" className="gap-1 text-sky-600 border-sky-300"><Truck className="h-3 w-3" /> Pembelian</Badge>
                     ) : (
                       <Badge variant="outline" className="gap-1 text-amber-600 border-amber-300"><ArrowUpCircle className="h-3 w-3" /> Pengeluaran</Badge>
                     )}
                   </TableCell>
-                  <TableCell className="max-w-[220px] truncate">{t.type === "sale" ? (t.items?.map((i) => `${i.name} x${i.qty}`).join(", ") || "-") : (t.category + (t.note ? ` · ${t.note}` : ""))}{t.is_credit && <span className="text-destructive text-xs ml-1">(Kasbon)</span>}</TableCell>
+                  <TableCell className="max-w-[220px] truncate">{t.type === "sale" ? (t.items?.map((i) => `${i.name} x${i.qty}`).join(", ") || "-") : t.type === "purchase" ? `${t.supplier_name ? t.supplier_name + ": " : ""}${t.items?.map((i) => `${i.name} x${i.qty}`).join(", ")}` : (t.category + (t.note ? ` · ${t.note}` : ""))}{t.is_credit && <span className="text-destructive text-xs ml-1">(Utang)</span>}</TableCell>
                   <TableCell className="text-sm">{t.cashier_name}</TableCell>
                   <TableCell className="text-sm uppercase">{t.payment_method}</TableCell>
                   <TableCell className={`text-right tabular font-medium ${t.type === "sale" ? "text-primary" : "text-amber-600"}`}>
                     {t.type === "sale" ? "+" : "-"}{rupiah(t.total)}
+                  </TableCell>
+                  <TableCell className="text-right whitespace-nowrap">
+                    {t.type === "sale" && (
+                      <>
+                        <Button size="icon" variant="ghost" title="Cetak struk" onClick={() => printReceipt(t, store)} data-testid={`print-${t.id}`}><Printer className="h-4 w-4" /></Button>
+                        <a href={whatsappUrl(t, store, null)} target="_blank" rel="noreferrer"><Button size="icon" variant="ghost" title="Kirim WhatsApp"><Send className="h-4 w-4" /></Button></a>
+                      </>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}

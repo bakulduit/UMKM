@@ -18,6 +18,7 @@ import Dashboard from "@/pages/app/Dashboard";
 import POS from "@/pages/app/POS";
 import Products from "@/pages/app/Products";
 import Customers from "@/pages/app/Customers";
+import Purchases from "@/pages/app/Purchases";
 import Reports from "@/pages/app/Reports";
 import History from "@/pages/app/History";
 import Outlets from "@/pages/app/Outlets";
@@ -61,6 +62,7 @@ function App() {
               <Route index element={<ProtectedRoute roles={["umkm_admin"]}><Dashboard /></ProtectedRoute>} />
               <Route path="pos" element={<POS />} />
               <Route path="products" element={<ProtectedRoute roles={["umkm_admin"]}><Products /></ProtectedRoute>} />
+              <Route path="purchases" element={<ProtectedRoute roles={["umkm_admin"]}><Purchases /></ProtectedRoute>} />
               <Route path="customers" element={<Customers />} />
               <Route path="reports" element={<ProtectedRoute roles={["umkm_admin"]}><Reports /></ProtectedRoute>} />
               <Route path="history" element={<History />} />
