@@ -1,0 +1,130 @@
+{
+  "theme": "Light theme primary for POS and Admin dashboards to ensure maximum clarity in various lighting conditions (e.g., storefronts). Support Dark theme via a toggle for Super Admin and Marketing pages to present a modern SaaS vibe.",
+  "typography": {
+    "strategy": "Soft Utility (Friendly yet precise for financial tools)",
+    "headings": {
+      "family": "Manrope",
+      "style": "tracking-tight, warm modern humanist sans. DO NOT USE Inter, Roboto, or generic sans for headings.",
+      "sizes": {
+        "h1": "text-4xl sm:text-5xl lg:text-6xl tracking-tighter leading-tight",
+        "h2": "text-2xl sm:text-3xl lg:text-4xl tracking-tight",
+        "h3": "text-xl sm:text-2xl tracking-tight",
+        "h4": "text-lg sm:text-xl font-medium"
+      }
+    },
+    "body": {
+      "family": "IBM Plex Sans",
+      "style": "Clean sans, highly legible with tabular data alignment. leading-relaxed for reading blocks."
+    },
+    "utility": "Overlines/Labels MUST be Uppercase + Tiny + Wide Spacing (tracking-[0.2em])."
+  },
+  "colors": {
+    "archetype": "ORGANIC & EARTHY + FINTECH TRUST",
+    "primary": {
+      "description": "Vibrant Emerald Green (Indonesian Fintech standard, denotes trust, success, and digital payments).",
+      "hex": "#10B981"
+    },
+    "secondary": {
+      "description": "Deep Navy/Slate for high-contrast typography and structural components.",
+      "hex": "#0F172A"
+    },
+    "background": {
+      "light": "#F8F9FA",
+      "dark": "#0B0F19"
+    },
+    "surface": {
+      "light": "#FFFFFF",
+      "dark": "#1E293B"
+    },
+    "rules": [
+      "No generic full-screen gradients.",
+      "Never use pure black (#000000) or gray. Always tint neutral greys with blue (cool) or orange (warm).",
+      "Ensure text meets APCA standards. DO NOT use complete transparent backgrounds for overlays."
+    ]
+  },
+  "spacing_and_layouts": {
+    "spacing_scale": "p-1, p-2, p-4, p-6, p-8, p-12, p-16, p-20, p-24, p-32",
+    "philosophy": "Generous Spacing (2-3x typical). Containers with borders MUST have internal padding (p-6 or p-8) to prevent text collision.",
+    "pos_layout": "High Density Layout. Strict grid hierarchy. Products catalog on left (grid-cols-2 md:grid-cols-3 lg:grid-cols-4), Cart/QRIS active session on right panel (col-span-1). Use h-full to stretch children.",
+    "dashboard_layout": "Dense Bento Grid for analytics (grid-cols-1 md:grid-cols-3 lg:grid-cols-4). Tight gaps (gap-4 or gap-6).",
+    "marketing_layout": "The 'Tetris' Grid. Asymmetrical, wide gaps (gap-8 to gap-12). Never fill 100% of the grid perfectly. Leave breathing room."
+  },
+  "visual_enhancers": {
+    "surfaces": [
+      "Glassmorphism (The 'Crystal' Variant) for Sticky Headers/Floating Navs. High opacity bg-white/70 (Light) or bg-black/60 (Dark), backdrop-blur-xl, 1px delicate inner stroke.",
+      "Neumorphism (The 'Tactile' Variant) for small toggles and quick action POS buttons.",
+      "Grid Borders (The 'Technical' Look) for Data-heavy Financial Reports."
+    ],
+    "shadows": "Layered shadows (ambient + direct). Use crisp edges via semi-transparent borders + soft shadows."
+  },
+  "components": {
+    "strategy": "Marketing = Pure HTML + Tailwind CSS (Bento). Apps/Dashboards = Shadcn UI heavily customized.",
+    "banned_practices": [
+      "Do NOT use generic Shadcn Card without customizing radius/spacing.",
+      "Do NOT use raw HTML inputs/selects, use Shadcn Form, Input, Select."
+    ],
+    "specific_components": {
+      "calendar": "Shadcn Calendar for report date ranges.",
+      "dropdown": "Shadcn Dropdown Menu for POS actions.",
+      "toast": "Use `sonner` for Toast notifications, especially critical for QRIS incoming money sound notifications."
+    }
+  },
+  "motion": {
+    "rules": [
+      "Hover states MUST exist on all interactive elements. Explicitly set text color on hover (e.g. hover:bg-slate-900 hover:text-white).",
+      "DO NOT use `transition: all`. Target specific properties (e.g., `transition: transform 0.2s ease, opacity 0.2s ease`).",
+      "Must respect `prefers-reduced-motion`."
+    ]
+  },
+  "accessibility": {
+    "contrast": "Normal text min 4.5:1. Large text 3:1. Interactive 3:1 against adjacent.",
+    "testing": "All interactive and key informational elements MUST include a `data-testid` attribute (kebab-case, role-based).",
+    "focus": "Focus states must have HIGHER contrast than default state."
+  },
+  "media": {
+    "rules": "Images MUST NOT exceed 80vh on mobile. Use max-h-[80vh] md:max-h-none.",
+    "image_urls": [
+      {
+        "category": "Marketing/Hero",
+        "description": "Vibrant market stall offering local goods, fitting the UMKM theme.",
+        "url": "https://images.pexels.com/photos/37042747/pexels-photo-37042747.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940"
+      },
+      {
+        "category": "Marketing/App_Feature",
+        "description": "Two individuals engaged in a contactless payment using a QR code scanner at a retail counter.",
+        "url": "https://images.pexels.com/photos/12935051/pexels-photo-12935051.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940"
+      },
+      {
+        "category": "Dashboard/POS_Placeholder",
+        "description": "Displayed products in shop.",
+        "url": "https://images.unsplash.com/photo-1542715473-63675d7974bd?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDQ2MzR8MHwxfHNlYXJjaHw0fHxzbWFsbCUyMGJ1c2luZXNzJTIwc2hvcCUyMG1hcmtldHxlbnwwfHx8fDE3OTAyMTUxODN8MA&ixlib=rb-4.1.0&q=85"
+      },
+      {
+        "category": "Dashboard/Cashier_Payment",
+        "description": "Hands using mobile for contactless payment at a terminal.",
+        "url": "https://images.pexels.com/photos/6612717/pexels-photo-6612717.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940"
+      }
+    ]
+  },
+  "instructions_to_main_agent": [
+    "Install Google Fonts 'Manrope' and 'IBM Plex Sans' in the project.",
+    "Install 'lucide-react' for UI icons and '@phosphor-icons/react' for complex dashboard metrics.",
+    "Implement the landing page, super admin dashboard, UMKM dashboard, and POS interface in the same app utilizing React Router or similar.",
+    "In the POS UI, implement a mock sound alert feature (using HTML5 Audio API) triggered upon a successful mock QRIS payment.",
+    "DO NOT use App.css default centered styling. Remove `text-align: center` from `.App`.",
+    "Construct the marketing Bento grids with raw HTML/Tailwind to allow asymmetry. Use Shadcn for interactive logic inside.",
+    "Always apply optical alignment over strict geometric alignment for buttons and layouts.",
+    "Use Recharts (with Shadcn integration) for the UMKM financial summary charts (income, expenses, profit).",
+    "Include `data-testid` on all buttons, forms, and critical data displays."
+  ],
+  "UNIVERSAL_GUIDELINES_FOR_MAIN_AGENT": [
+    "Avoid generic, 'on distribution' outputs (AI slop). Make the UI creative, distinctive, and surprisingly good.",
+    "Create depth through layered design elements with z-index hierarchy.",
+    "NEVER use universal transition (e.g., `transition: all`).",
+    "NEVER center align the app container. Left-align dense content for better legibility.",
+    "Use modern pill-shaped or sharp buttons with interactive hover and click animations.",
+    "NEVER use AI assistant Emoji characters (🤖🧠💭💡🔮🎯) for icons. Rely exclusively on lucide/phosphor icons.",
+    "Use 2-3x more spacing than feels comfortable. Cramped designs look cheap.",
+    "For images, ALWAYS use the provided `image_urls`. Missing categories = you must use the provided URLs. DO NOT use placeholder text or placeholder services."
+  ]
+}
