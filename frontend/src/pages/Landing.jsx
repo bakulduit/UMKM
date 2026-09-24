@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import Brand from "@/components/Brand";
 import {
-  Wallet, ShoppingCart, QrCode, BellRing, BarChart3, ShieldCheck,
+  ShoppingCart, QrCode, BellRing, BarChart3, ShieldCheck,
   Package, Users, ArrowRight, Check, Store, FileSpreadsheet, Phone, Mail,
 } from "lucide-react";
 
@@ -17,14 +18,14 @@ const SLIDES = [
 ];
 
 const CARD_TONES = [
-  "bg-emerald-100 text-emerald-700",
+  "bg-orange-100 text-orange-600",
+  "bg-blue-100 text-blue-700",
+  "bg-sky-100 text-sky-700",
+  "bg-orange-100 text-orange-600",
+  "bg-indigo-100 text-indigo-700",
+  "bg-blue-100 text-blue-700",
   "bg-amber-100 text-amber-700",
   "bg-sky-100 text-sky-700",
-  "bg-rose-100 text-rose-700",
-  "bg-violet-100 text-violet-700",
-  "bg-orange-100 text-orange-700",
-  "bg-teal-100 text-teal-700",
-  "bg-fuchsia-100 text-fuchsia-700",
 ];
 
 const features = [
@@ -38,18 +39,8 @@ const features = [
   { icon: Store, title: "Multi-Outlet", desc: "Kelola beberapa cabang dan banyak akun kasir dari satu pemilik." },
 ];
 
-function Logo({ dark }) {
-  return (
-    <div className="flex items-center gap-3">
-      <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 grid place-items-center shadow-md shadow-emerald-500/30">
-        <Wallet className="h-5 w-5 text-white" />
-      </div>
-      <div className="leading-none">
-        <div className={`font-heading font-extrabold text-xl tracking-tight ${dark ? "text-white" : "text-secondary"}`}>UMKM</div>
-        <div className="text-[11px] font-semibold tracking-[0.25em] text-emerald-500 uppercase">go digital</div>
-      </div>
-    </div>
-  );
+function Logo() {
+  return <Brand />;
 }
 
 function HeroSlideshow() {
@@ -83,7 +74,7 @@ function HeroSlideshow() {
         </div>
       </div>
       <div className="absolute -bottom-6 -left-4 bg-white rounded-2xl shadow-xl border p-4 w-56 -rotate-2 hidden sm:block z-10">
-        <div className="flex items-center gap-2 text-emerald-600">
+        <div className="flex items-center gap-2 text-primary">
           <BellRing className="h-5 w-5" />
           <span className="font-heading font-bold">Uang Masuk!</span>
         </div>
@@ -110,11 +101,11 @@ export default function Landing() {
 
       {/* Hero */}
       <section className="relative overflow-hidden">
-        <div className="absolute -top-24 -right-24 h-72 w-72 rounded-full bg-amber-200/50 blur-3xl" />
-        <div className="absolute top-40 -left-20 h-72 w-72 rounded-full bg-emerald-200/50 blur-3xl" />
+        <div className="absolute -top-24 -right-24 h-72 w-72 rounded-full bg-orange-200/50 blur-3xl" />
+        <div className="absolute top-40 -left-20 h-72 w-72 rounded-full bg-blue-200/50 blur-3xl" />
         <div className="max-w-6xl mx-auto px-6 pt-16 pb-20 grid lg:grid-cols-2 gap-12 items-center relative">
         <div className="animate-fade-up">
-          <span className="overline text-emerald-600">Aplikasi Keuangan UMKM Indonesia</span>
+          <span className="overline text-primary">Aplikasi Keuangan UMKM Indonesia</span>
           <h1 className="font-heading text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tighter leading-tight mt-4">
             Kelola kasir & keuangan usaha, <span className="text-primary">mudah dan praktis.</span>
           </h1>
@@ -189,13 +180,13 @@ export default function Landing() {
           <Logo />
           <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-6">
             <a href="https://wa.me/6282129078762" target="_blank" rel="noreferrer" data-testid="footer-wa"
-               className="flex items-center gap-2 text-sm font-medium text-secondary hover:text-emerald-600 transition-colors">
-              <span className="h-9 w-9 rounded-full bg-emerald-100 text-emerald-700 grid place-items-center"><Phone className="h-4 w-4" /></span>
+               className="flex items-center gap-2 text-sm font-medium text-secondary hover:text-primary transition-colors">
+              <span className="h-9 w-9 rounded-full bg-blue-100 text-blue-700 grid place-items-center"><Phone className="h-4 w-4" /></span>
               0821-2907-8762
             </a>
             <a href="mailto:nashoharizal@gmail.com" data-testid="footer-email"
-               className="flex items-center gap-2 text-sm font-medium text-secondary hover:text-emerald-600 transition-colors">
-              <span className="h-9 w-9 rounded-full bg-amber-100 text-amber-700 grid place-items-center"><Mail className="h-4 w-4" /></span>
+               className="flex items-center gap-2 text-sm font-medium text-secondary hover:text-primary transition-colors">
+              <span className="h-9 w-9 rounded-full bg-orange-100 text-orange-600 grid place-items-center"><Mail className="h-4 w-4" /></span>
               nashoharizal@gmail.com
             </a>
           </div>

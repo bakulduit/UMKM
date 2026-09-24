@@ -5,8 +5,9 @@ import { useAuth, homeFor } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Wallet, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import Brand from "@/components/Brand";
 
 export default function Login() {
   const { login } = useAuth();
@@ -35,10 +36,7 @@ export default function Login() {
   return (
     <div className="min-h-screen grid lg:grid-cols-2">
       <div className="hidden lg:flex flex-col justify-between bg-secondary text-white p-12">
-        <Link to="/" className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-primary grid place-items-center"><Wallet className="h-5 w-5" /></div>
-          <span className="font-heading font-extrabold text-xl">UMKM Pay</span>
-        </Link>
+        <Link to="/"><Brand /></Link>
         <div>
           <h2 className="font-heading text-4xl font-extrabold tracking-tight leading-tight">Keuangan usaha Anda, terkendali.</h2>
           <p className="text-white/60 mt-4 max-w-md">Masuk untuk mengelola kasir, produk, dan laporan keuangan UMKM Anda.</p>
@@ -48,10 +46,7 @@ export default function Login() {
 
       <div className="flex items-center justify-center p-6 lg:p-12 bg-background">
         <div className="w-full max-w-sm animate-fade-up">
-          <Link to="/" className="lg:hidden flex items-center gap-2 mb-8">
-            <div className="h-9 w-9 rounded-xl bg-primary grid place-items-center"><Wallet className="h-5 w-5 text-white" /></div>
-            <span className="font-heading font-extrabold text-lg text-secondary">UMKM Pay</span>
-          </Link>
+          <Link to="/" className="lg:hidden inline-block mb-8"><Brand /></Link>
           <h1 className="font-heading text-3xl font-extrabold tracking-tight text-secondary">Masuk</h1>
           <p className="text-muted-foreground mt-2">Silakan masuk ke akun Anda.</p>
 

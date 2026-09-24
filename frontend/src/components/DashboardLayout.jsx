@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
+import Brand from "@/components/Brand";
 import {
   LayoutDashboard, ShoppingCart, Package, Users, FileBarChart, Store,
-  UserCog, CreditCard, Settings, LogOut, Menu, X, Building2, BadgeCheck, ScrollText, Wallet, Truck,
+  UserCog, CreditCard, Settings, LogOut, Menu, X, Building2, BadgeCheck, ScrollText, Truck,
 } from "lucide-react";
 
 const NAV = {
@@ -54,14 +55,8 @@ export default function DashboardLayout() {
           open ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         }`}
       >
-        <div className="p-6 flex items-center gap-3 border-b border-white/10">
-          <div className="h-10 w-10 rounded-xl bg-primary grid place-items-center">
-            <Wallet className="h-5 w-5 text-white" />
-          </div>
-          <div>
-            <div className="font-heading font-extrabold text-lg leading-none">UMKM</div>
-            <div className="text-[10px] font-semibold tracking-[0.25em] text-primary uppercase mt-1">go digital</div>
-          </div>
+        <div className="p-5 border-b border-white/10">
+          <Brand imgClass="h-8" />
         </div>
 
         <nav className="flex-1 overflow-y-auto p-4 space-y-1">

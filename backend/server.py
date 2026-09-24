@@ -827,7 +827,7 @@ async def export_report(format: str = "excel", start: Optional[str] = None, end:
         elems.append(Spacer(1, 12))
         data = [["Tanggal", "Tipe", "Keterangan", "Kasir", "Jumlah"]] + [[r["Tanggal"], r["Tipe"], r["Keterangan"][:30], r["Kasir"], f"Rp {r['Jumlah']:,.0f}"] for r in rows]
         table = Table(data, repeatRows=1)
-        table.setStyle(TableStyle([("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#10B981")),
+        table.setStyle(TableStyle([("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#F2811E")),
                                     ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
                                     ("FONTSIZE", (0, 0), (-1, -1), 8), ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
                                     ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#F1F5F9")])]))
