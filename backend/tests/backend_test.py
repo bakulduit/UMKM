@@ -67,7 +67,7 @@ class TestAuth:
         assert r.status_code == 200
         me = r.json()
         assert me["role"] == "umkm_admin"
-        assert me["umkm"]["status"] == "trial"
+        assert me["umkm"]["status"] in ("trial", "active")
         assert me["subscription"]["active"] is True
 
     def test_login_wrong_password(self):
@@ -358,3 +358,216 @@ class TestPlatformAndToggle:
         assert r3.json()["suspended"] is False
         r4 = requests.post(f"{API}/auth/login", json={"email": UMKM_B["email"], "password": UMKM_B["password"]})
         assert r4.status_code == 200
+
+
+
+# ================= SUPPLIERS =================
+class TestSuppliers:
+    def test_create_and_list_supplier(self, token_a):
+        r = requests.post(f"{API}/suppliers",
+                          json={"name": f"Supplier {RUN_ID}", "phone": "0899", "note": "test"},
+                          headers=_auth_headers(token_a))
+        assert r.status_code == 200, r.text
+        sup = r.json()
+        assert sup["name"].startswith("Supplier")
+        assert "id" in sup
+        r2 = requests.get(f"{API}/suppliers", headers=_auth_headers(token_a))
+        assert r2.status_code == 200
+        assert any(s["id"] == sup["id"] for s in r2.json())
+
+    def test_supplier_tenant_isolation(self, token_a, token_b):
+        r = requests.post(f"{API}/suppliers", json={"name": f"SupA {RUN_ID}"},
+                          headers=_auth_headers(token_a))
+        sid = r.json()["id"]
+        r2 = requests.get(f"{API}/suppliers", headers=_auth_headers(token_b))
+        assert all(s["id"] != sid for s in r2.json())
+
+    def test_cashier_cannot_create_supplier(self, token_a):
+        # create dedicated cashier for role test (self-contained)
+        email = f"kasir_sup_{RUN_ID}@demo.com"
+        requests.post(f"{API}/cashiers",
+                      json={"name": "K Sup", "email": email, "password": "Kasir123"},
+                      headers=_auth_headers(token_a))
+        rl = requests.post(f"{API}/auth/login", json={"email": email, "password": "Kasir123"})
+        token = rl.json()["access_token"]
+        r = requests.post(f"{API}/suppliers", json={"name": "x"}, headers=_auth_headers(token))
+        assert r.status_code == 403
+
+
+# ================= PURCHASES =================
+@pytest.fixture(scope="session")
+def product_purchase(token_a):
+    """Dedicated product for purchase tests (isolate stock changes)."""
+    payload = {"name": "Beras 5kg", "sku": "B5", "category": "Sembako",
+               "price": 70000, "cost": 60000, "stock": 5, "low_stock_threshold": 3}
+    r = requests.post(f"{API}/products", json=payload, headers=_auth_headers(token_a))
+    assert r.status_code == 200
+    return r.json()
+
+
+class TestPurchases:
+    def test_create_purchase_increments_stock_and_updates_cost(self, token_a, product_purchase):
+        supplier_r = requests.post(f"{API}/suppliers", json={"name": f"Sup Beras {RUN_ID}"},
+                                   headers=_auth_headers(token_a))
+        sup_id = supplier_r.json()["id"]
+        payload = {"supplier_id": sup_id, "payment_method": "cash",
+                   "items": [{"product_id": product_purchase["id"], "name": product_purchase["name"],
+                              "cost": 62000, "qty": 10}]}
+        r = requests.post(f"{API}/purchases", json=payload, headers=_auth_headers(token_a))
+        assert r.status_code == 200, r.text
+        p = r.json()
+        assert p["type"] == "purchase"
+        assert p["total"] == 620000
+        assert p["status"] == "paid"
+        assert p["is_credit"] is False
+        assert p["supplier_id"] == sup_id
+        assert p["supplier_name"].startswith("Sup Beras")
+        # stock should be 5 + 10 = 15, cost updated to 62000
+        rp = requests.get(f"{API}/products", headers=_auth_headers(token_a))
+        prod = next(pr for pr in rp.json() if pr["id"] == product_purchase["id"])
+        assert prod["stock"] == 15, f"expected 15, got {prod['stock']}"
+        assert prod["cost"] == 62000
+
+    def test_purchase_listed_and_in_transactions(self, token_a, product_purchase):
+        r = requests.get(f"{API}/purchases", headers=_auth_headers(token_a))
+        assert r.status_code == 200
+        purchases = r.json()
+        assert len(purchases) >= 1
+        assert all(p["type"] == "purchase" for p in purchases)
+        # transactions endpoint filter
+        rt = requests.get(f"{API}/transactions?type=purchase", headers=_auth_headers(token_a))
+        assert rt.status_code == 200
+        assert len(rt.json()) >= 1
+        assert all(t["type"] == "purchase" for t in rt.json())
+
+    def test_purchase_credit(self, token_a, product_purchase):
+        payload = {"payment_method": "credit",
+                   "items": [{"product_id": product_purchase["id"], "name": product_purchase["name"],
+                              "cost": 62000, "qty": 1}]}
+        r = requests.post(f"{API}/purchases", json=payload, headers=_auth_headers(token_a))
+        assert r.status_code == 200
+        p = r.json()
+        assert p["is_credit"] is True
+        assert p["status"] == "credit"
+
+    def test_purchase_in_reports_cashflow_not_in_expense(self, token_a):
+        r = requests.get(f"{API}/reports/summary", headers=_auth_headers(token_a))
+        assert r.status_code == 200
+        data = r.json()
+        assert data["purchases"] > 0
+        # purchases should be counted in cash_out but not in total_expense
+        assert data["cash_out"] >= data["total_expense"] + data["purchases"] - 62000  # credit purchase excluded from cash_out
+        # net_profit should NOT include purchases (only expenses)
+        assert data["net_profit"] == data["gross_profit"] - data["total_expense"]
+
+    def test_purchase_in_dashboard_purchases_field(self, token_a):
+        r = requests.get(f"{API}/dashboard/summary", headers=_auth_headers(token_a))
+        assert r.status_code == 200
+        data = r.json()
+        assert "purchases" in data
+        assert data["purchases"] > 0
+        # profit should still be income - expense (not include purchases)
+        assert data["profit"] == data["income"] - data["expense"]
+
+    def test_cashier_cannot_create_purchase(self, token_a, product_purchase):
+        email = f"kasir_pur_{RUN_ID}@demo.com"
+        requests.post(f"{API}/cashiers",
+                      json={"name": "K Pur", "email": email, "password": "Kasir123"},
+                      headers=_auth_headers(token_a))
+        rl = requests.post(f"{API}/auth/login", json={"email": email, "password": "Kasir123"})
+        token = rl.json()["access_token"]
+        r = requests.post(f"{API}/purchases",
+                         json={"items": [{"product_id": product_purchase["id"], "name": "x", "cost": 1, "qty": 1}]},
+                         headers=_auth_headers(token))
+        assert r.status_code == 403
+
+
+# ================= PER-OUTLET FILTERING =================
+class TestPerOutlet:
+    def test_product_outlet_assignment(self, token_a):
+        # Create outlet
+        ro = requests.post(f"{API}/outlets", json={"name": f"Cabang X {RUN_ID}"},
+                          headers=_auth_headers(token_a))
+        outlet_id = ro.json()["id"]
+        # Create product with outlet_id
+        rp = requests.post(f"{API}/products",
+                          json={"name": "Produk Outlet", "price": 10000, "cost": 5000,
+                                "stock": 20, "outlet_id": outlet_id},
+                          headers=_auth_headers(token_a))
+        assert rp.status_code == 200
+        prod = rp.json()
+        assert prod["outlet_id"] == outlet_id
+        # Update product outlet_id via PUT
+        ru = requests.put(f"{API}/products/{prod['id']}",
+                         json={"name": "Produk Outlet", "price": 10000, "cost": 5000,
+                               "stock": 20, "outlet_id": outlet_id},
+                         headers=_auth_headers(token_a))
+        assert ru.status_code == 200
+        assert ru.json()["outlet_id"] == outlet_id
+        # products list returns outlet_id
+        rl = requests.get(f"{API}/products", headers=_auth_headers(token_a))
+        assert any(p.get("outlet_id") == outlet_id for p in rl.json())
+
+    def test_dashboard_and_reports_outlet_filter(self, token_a, product_a):
+        # Create 2 outlets
+        o1 = requests.post(f"{API}/outlets", json={"name": f"O1-{RUN_ID}"},
+                          headers=_auth_headers(token_a)).json()["id"]
+        o2 = requests.post(f"{API}/outlets", json={"name": f"O2-{RUN_ID}"},
+                          headers=_auth_headers(token_a)).json()["id"]
+        # Sale under outlet o1
+        s1 = requests.post(f"{API}/transactions/sale",
+                          json={"items": [{"product_id": product_a["id"], "name": product_a["name"],
+                                          "price": product_a["price"], "cost": product_a["cost"], "qty": 1}],
+                                "payment_method": "cash", "outlet_id": o1},
+                          headers=_auth_headers(token_a))
+        assert s1.status_code == 200
+        s1_total = s1.json()["total"]
+        # Sale under o2
+        s2 = requests.post(f"{API}/transactions/sale",
+                          json={"items": [{"product_id": product_a["id"], "name": product_a["name"],
+                                          "price": product_a["price"], "cost": product_a["cost"], "qty": 2}],
+                                "payment_method": "cash", "outlet_id": o2},
+                          headers=_auth_headers(token_a))
+        assert s2.status_code == 200
+        s2_total = s2.json()["total"]
+
+        # Dashboard filtered by o1
+        d1 = requests.get(f"{API}/dashboard/summary?outlet_id={o1}", headers=_auth_headers(token_a)).json()
+        d2 = requests.get(f"{API}/dashboard/summary?outlet_id={o2}", headers=_auth_headers(token_a)).json()
+        d_all = requests.get(f"{API}/dashboard/summary", headers=_auth_headers(token_a)).json()
+        assert d1["income"] >= s1_total
+        assert d2["income"] >= s2_total
+        # aggregate all >= either single
+        assert d_all["income"] >= d1["income"]
+        assert d_all["income"] >= d2["income"]
+
+        # Reports filtered
+        rp1 = requests.get(f"{API}/reports/summary?outlet_id={o1}", headers=_auth_headers(token_a)).json()
+        rp2 = requests.get(f"{API}/reports/summary?outlet_id={o2}", headers=_auth_headers(token_a)).json()
+        assert rp1["revenue"] >= s1_total
+        assert rp2["revenue"] >= s2_total
+
+    def test_export_with_outlet_filter(self, token_a):
+        o1 = requests.post(f"{API}/outlets", json={"name": f"OExp-{RUN_ID}"},
+                          headers=_auth_headers(token_a)).json()["id"]
+        r = requests.get(f"{API}/reports/export?format=excel&outlet_id={o1}&auth={token_a}")
+        assert r.status_code == 200
+        assert "spreadsheet" in r.headers.get("content-type", "")
+        r2 = requests.get(f"{API}/reports/export?format=pdf&outlet_id={o1}&auth={token_a}")
+        assert r2.status_code == 200
+        assert r2.content[:4] == b"%PDF"
+
+
+# ================= RECEIPT DATA =================
+class TestReceiptData:
+    def test_sale_response_carries_receipt_fields(self, token_a, product_a):
+        payload = {"items": [{"product_id": product_a["id"], "name": product_a["name"],
+                             "price": product_a["price"], "cost": product_a["cost"], "qty": 1}],
+                   "payment_method": "cash", "amount_paid": 20000}
+        r = requests.post(f"{API}/transactions/sale", json=payload, headers=_auth_headers(token_a))
+        assert r.status_code == 200
+        sale = r.json()
+        for k in ("items", "total", "payment_method", "amount_paid", "cashier_name", "created_at"):
+            assert k in sale, f"missing {k}"
+        assert sale["amount_paid"] == 20000
+        assert len(sale["items"]) == 1

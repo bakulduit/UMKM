@@ -1,6 +1,7 @@
 import { rupiah, shortDate } from "@/lib/format";
 
 export function buildReceiptText(txn, store) {
+  if (!txn) return "";
   const lines = [];
   lines.push(`*${store?.name || "Toko"}*`);
   if (store?.address) lines.push(store.address);
@@ -28,6 +29,7 @@ export function buildReceiptText(txn, store) {
 }
 
 export function buildReceiptHTML(txn, store) {
+  if (!txn) return "";
   const rows = (txn.items || [])
     .map(
       (i) => `<tr><td>${i.name}<div class="m">${i.qty} x ${rupiah(i.price)}</div></td><td class="r">${rupiah(i.price * i.qty)}</td></tr>`
@@ -65,6 +67,7 @@ export function buildReceiptHTML(txn, store) {
 }
 
 export function printReceipt(txn, store) {
+  if (!txn) return;
   const w = window.open("", "_blank", "width=340,height=600");
   if (!w) return;
   w.document.write(buildReceiptHTML(txn, store));

@@ -262,8 +262,8 @@ export default function POS() {
               <p className="text-sm text-muted-foreground mt-1">Kembalian: {rupiah(lastTxn.amount_paid - lastTxn.total)}</p>
             )}
             <div className="grid grid-cols-2 gap-2 mt-6">
-              <Button variant="outline" onClick={() => printReceipt(lastTxn, umkm)} data-testid="print-receipt"><Printer className="h-4 w-4 mr-2" /> Cetak Struk</Button>
-              <a href={whatsappUrl(lastTxn, umkm, null)} target="_blank" rel="noreferrer" className="w-full">
+              <Button variant="outline" onClick={() => lastTxn && printReceipt(lastTxn, umkm)} data-testid="print-receipt"><Printer className="h-4 w-4 mr-2" /> Cetak Struk</Button>
+              <a href={lastTxn ? whatsappUrl(lastTxn, umkm, null) : "#"} target="_blank" rel="noreferrer" className="w-full">
                 <Button variant="outline" className="w-full" data-testid="wa-receipt"><Send className="h-4 w-4 mr-2" /> WhatsApp</Button>
               </a>
             </div>

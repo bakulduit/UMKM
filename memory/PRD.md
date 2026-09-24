@@ -25,11 +25,16 @@ Web app SaaS untuk UMKM Indonesia: pemilik web app sebagai super admin menjual l
 - Image upload for product/QRIS/proof via object storage.
 
 ## Implemented (2026-06-24)
-- All core requirements above implemented and tested. Backend 28/28 tests pass; frontend critical flows pass.
+- All core requirements above implemented and tested. Backend tests pass; frontend critical flows pass.
 - Landing/marketing page, login, register.
 - Super admin: dashboard stats, manage UMKM (suspend/activate), verify payments, platform settings + QRIS.
 - UMKM admin: dashboard, POS, products, customers/kasbon, reports+export, history+expenses, outlets, cashiers, subscription, store settings/QRIS.
 - Cashier: POS, customers, own history.
+
+## Implemented — Iteration 2 (2026-06-24)
+- Cetak & Kirim Struk: print receipt (thermal-style) + WhatsApp share from POS success dialog and History (per-sale). `/app/frontend/src/lib/receipt.js`.
+- Laporan Per-Outlet: outlet filter on Dashboard & Reports (+ export), product→outlet assignment, POS outlet selector; backend dashboard/reports/export accept `outlet_id`.
+- Modul Pembelian Stok: Suppliers CRUD + Purchases/restock (increments stock, updates cost, counted in cash flow, not in operating profit). New page `/app/purchases`. 41/41 backend tests pass.
 
 ## Backlog (not yet built)
 - P1: Struk/receipt printing & WhatsApp share; automatic QRIS gateway (Midtrans/Xendit) for dynamic amounts.
