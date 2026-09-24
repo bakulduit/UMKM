@@ -116,6 +116,8 @@ async def get_current_user(request: Request) -> dict:
         user = await db.users.find_one({"_id": ObjectId(payload["sub"])})
         if not user:
             raise HTTPException(status_code=401, detail="User tidak ditemukan")
+        if not user.get("is_active", True):
+            raise HTTPException(status_code=403, detail="Akun dinonaktifkan")
         return clean_user(user)
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Sesi berakhir, silakan login lagi")
@@ -501,7 +503,11 @@ async def create_cashier(data: CashierInput, user: dict = Depends(require_roles(
 
 @api_router.delete("/cashiers/{cid}")
 async def delete_cashier(cid: str, user: dict = Depends(require_roles("umkm_admin"))):
-    await db.users.delete_one({"_id": ObjectId(cid), "umkm_id": user["umkm_id"], "role": "cashier"})
+    try:
+        oid = ObjectId(cid)
+    except Exception:
+        raise HTTPException(status_code=400, detail="ID kasir tidak valid")
+    await db.users.delete_one({"_id": oid, "umkm_id": user["umkm_id"], "role": "cashier"})
     return {"ok": True}
 
 

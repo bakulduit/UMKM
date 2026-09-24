@@ -239,6 +239,7 @@ export default function POS() {
       {/* Success Dialog */}
       <Dialog open={successOpen} onOpenChange={setSuccessOpen}>
         <DialogContent data-testid="success-dialog">
+          <DialogTitle className="sr-only">Transaksi Berhasil</DialogTitle>
           <div className="text-center py-4">
             <div className="h-16 w-16 rounded-full bg-accent grid place-items-center mx-auto animate-coin-pop">
               <CheckCircle2 className="h-9 w-9 text-primary" />
